@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.feedsystem.account.mapper.AccountMapper">
+
+    <resultMap id="AccountResultMap" type="com.example.feedsystem.account.model.AccountDO">
+        <id column="id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="password" property="password"/>
+        <result column="token" property="token"/>
+        <result column="refresh_token" property="refreshToken"/>
+        <result column="avatar_url" property="avatarUrl"/>
+        <result column="bio" property="bio"/>
+    </resultMap>
+
+    <sql id="AccountColumns">
+        id, username, password, token, refresh_token, avatar_url, bio
+    </sql>
+
+    <select id="selectById" resultMap="AccountResultMap">
+        SELECT <include refid="AccountColumns"/>
+        FROM accounts
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByUsername" resultMap="AccountResultMap">
+        SELECT <include refid="AccountColumns"/>
+        FROM accounts
+        WHERE username = #{username}
+    </select>
+
+    <select id="selectByRefreshToken" resultMap="AccountResultMap">
+        SELECT <include refid="AccountColumns"/>
+        FROM accounts
+        WHERE refresh_token = #{refreshToken}
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.example.feedsystem.account.model.AccountDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO accounts (username, password)
+        VALUES (#{username}, #{password})
+    </insert>
+
+    <update id="updateLoginTokens">
+        UPDATE accounts
+        SET token = #{token},
+            refresh_token = #{refreshToken}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateToken">
+        UPDATE accounts
+        SET token = #{token}
+        WHERE id = #{id}
+    </update>
+
+    <update id="clearTokens">
+        UPDATE accounts
+        SET token = NULL,
+            refresh_token = NULL
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE accounts
+        SET password = #{password}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateUsernameAndToken">
+        UPDATE accounts
+        SET username = #{username},
+            token = #{token}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateProfile">
+        UPDATE accounts
+        SET avatar_url = #{avatarUrl},
+            bio = #{bio}
+        WHERE id = #{id}
+    </update>
+</mapper>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.feedsystem.video.mapper.VideoMapper">
+
+    <resultMap id="VideoResultMap" type="com.example.feedsystem.video.model.VideoDO">
+        <id column="id" property="id"/>
+        <result column="author_id" property="authorId"/>
+        <result column="username" property="username"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="play_url" property="playUrl"/>
+        <result column="cover_url" property="coverUrl"/>
+        <result column="create_time" property="createTime"/>
+        <result column="likes_count" property="likesCount"/>
+        <result column="popularity" property="popularity"/>
+    </resultMap>
+
+    <resultMap id="TagResultMap" type="com.example.feedsystem.video.model.TagDO">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+    </resultMap>
+
+    <sql id="VideoColumns">
+        id, author_id, username, title, description, play_url, cover_url, create_time, likes_count, popularity
+    </sql>
+
+    <insert id="insertVideo" parameterType="com.example.feedsystem.video.model.VideoDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO videos (
+            author_id, username, title, description, play_url, cover_url, create_time, likes_count, popularity
+        )
+        VALUES (
+            #{authorId}, #{username}, #{title}, #{description}, #{playUrl}, #{coverUrl}, #{createTime}, #{likesCount}, #{popularity}
+        )
+    </insert>
+
+    <delete id="deleteById">
+        DELETE FROM videos
+        WHERE id = #{id}
+    </delete>
+
+    <select id="selectById" resultMap="VideoResultMap">
+        SELECT <include refid="VideoColumns"/>
+        FROM videos
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByAuthorId" resultMap="VideoResultMap">
+        SELECT <include refid="VideoColumns"/>
+        FROM videos
+        WHERE author_id = #{authorId}
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <insert id="insertOutbox" parameterType="com.example.feedsystem.video.model.OutboxMsgDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO outbox_msgs (video_id, event_type, create_time, status)
+        VALUES (#{videoId}, #{eventType}, #{createTime}, #{status})
+    </insert>
+
+    <select id="selectTagByName" resultMap="TagResultMap">
+        SELECT id, name
+        FROM tags
+        WHERE name = #{name}
+        LIMIT 1
+    </select>
+
+    <insert id="insertTag" parameterType="com.example.feedsystem.video.model.TagDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tags (name)
+        VALUES (#{name})
+    </insert>
+
+    <insert id="insertVideoTag">
+        INSERT INTO video_tags (video_id, tag_id)
+        VALUES (#{videoId}, #{tagId})
+    </insert>
+</mapper>

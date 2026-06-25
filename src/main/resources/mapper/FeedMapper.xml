@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.feedsystem.feed.mapper.FeedMapper">
+    <resultMap id="VideoResultMap" type="com.example.feedsystem.video.model.VideoDO">
+        <id column="id" property="id"/>
+        <result column="author_id" property="authorId"/>
+        <result column="username" property="username"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="play_url" property="playUrl"/>
+        <result column="cover_url" property="coverUrl"/>
+        <result column="create_time" property="createTime"/>
+        <result column="likes_count" property="likesCount"/>
+        <result column="popularity" property="popularity"/>
+    </resultMap>
+    <sql id="VideoColumns">id, author_id, username, title, description, play_url, cover_url, create_time, likes_count, popularity</sql>
+    <select id="selectLatest" resultMap="VideoResultMap">
+        SELECT <include refid="VideoColumns"/> FROM videos
+        <if test="before != null">WHERE create_time &lt; #{before}</if>
+        ORDER BY create_time DESC LIMIT #{limit}
+    </select>
+    <select id="selectByLikesCount" resultMap="VideoResultMap">
+        SELECT <include refid="VideoColumns"/> FROM videos
+        <if test="likesBefore != null">
+            WHERE likes_count &lt; #{likesBefore} OR (likes_count = #{likesBefore} AND id &lt; #{idBefore})
+        </if>
+        ORDER BY likes_count DESC, id DESC LIMIT #{limit}
+    </select>
+    <select id="selectByFollowing" resultMap="VideoResultMap">
+        SELECT <include refid="VideoColumns"/> FROM videos
+        WHERE author_id IN (SELECT vlogger_id FROM socials WHERE follower_id = #{accountId})
+        <if test="before != null">AND create_time &lt; #{before}</if>
+        ORDER BY create_time DESC LIMIT #{limit}
+    </select>
+    <select id="selectByPopularity" resultMap="VideoResultMap">
+        SELECT <include refid="VideoColumns"/> FROM videos
+        <if test="popularityBefore != null">
+            WHERE popularity &lt; #{popularityBefore}
+               OR (popularity = #{popularityBefore} AND create_time &lt; #{timeBefore})
+               OR (popularity = #{popularityBefore} AND create_time = #{timeBefore} AND id &lt; #{idBefore})
+        </if>
+        ORDER BY popularity DESC, create_time DESC, id DESC LIMIT #{limit}
+    </select>
+    <select id="selectByTag" resultMap="VideoResultMap">
+        SELECT v.id, v.author_id, v.username, v.title, v.description, v.play_url, v.cover_url,
+               v.create_time, v.likes_count, v.popularity
+        FROM videos v INNER JOIN video_tags vt ON vt.video_id = v.id INNER JOIN tags t ON t.id = vt.tag_id
+        WHERE t.name = #{tagName} ORDER BY v.create_time DESC LIMIT #{limit}
+    </select>
+    <select id="selectByIds" resultMap="VideoResultMap">
+        SELECT <include refid="VideoColumns"/> FROM videos WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+    <select id="selectLikedVideoIds" resultType="long">
+        SELECT video_id FROM likes WHERE account_id = #{accountId} AND video_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+</mapper>

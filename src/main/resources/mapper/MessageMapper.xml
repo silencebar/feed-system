@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.feedsystem.message.mapper.MessageMapper">
+    <resultMap id="MessageResultMap" type="com.example.feedsystem.message.model.MessageDO">
+        <id column="id" property="id"/>
+        <result column="from_id" property="fromId"/>
+        <result column="to_id" property="toId"/>
+        <result column="content" property="content"/>
+        <result column="is_read" property="read"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+    <insert id="insert" parameterType="com.example.feedsystem.message.model.MessageDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO messages (from_id, to_id, content, is_read, created_at)
+        VALUES (#{fromId}, #{toId}, #{content}, #{read}, #{createdAt})
+    </insert>
+    <select id="selectConversation" resultMap="MessageResultMap">
+        SELECT id, from_id, to_id, content, is_read, created_at
+        FROM messages
+        WHERE (from_id = #{currentUserId} AND to_id = #{peerId})
+           OR (from_id = #{peerId} AND to_id = #{currentUserId})
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

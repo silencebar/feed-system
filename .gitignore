@@ -1,0 +1,59 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Local secrets / environment configs ###
+.env
+.env.*
+*.env
+src/main/resources/application-secret.yml
+src/main/resources/application-local.yml
+src/main/resources/application-dev.yml
+!src/main/resources/application-secret.example.yml
+
+### Local uploads / generated media ###
+.run/
+uploads/
+src/main/resources/static/uploads/
+src/main/resources/static/videos/
+src/main/resources/static/covers/
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+
+### JMeter generated pressure-test data ###
+target/jmeter-data/
+*.jtl
+*.jmeter.log
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/

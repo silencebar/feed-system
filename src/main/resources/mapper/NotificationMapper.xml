@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.feedsystem.notification.mapper.NotificationMapper">
+    <resultMap id="NotificationResultMap" type="com.example.feedsystem.notification.model.NotificationDO">
+        <id column="id" property="id"/>
+        <result column="recipient_id" property="recipientId"/>
+        <result column="sender_id" property="senderId"/>
+        <result column="type" property="type"/>
+        <result column="target_id" property="targetId"/>
+        <result column="content" property="content"/>
+        <result column="is_read" property="isRead"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.example.feedsystem.notification.model.NotificationDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO notifications (recipient_id, sender_id, type, target_id, content, is_read, created_at)
+        VALUES (#{recipientId}, #{senderId}, #{type}, #{targetId}, #{content}, #{isRead}, #{createdAt})
+    </insert>
+
+    <select id="selectVideoAuthorId" resultType="long">
+        SELECT author_id FROM videos WHERE id = #{videoId}
+    </select>
+
+    <delete id="deleteByVideoIds">
+        DELETE FROM notifications
+        WHERE target_id IN
+        <foreach collection="videoIds" item="videoId" open="(" separator="," close=")">
+            #{videoId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteByAccountIds">
+        DELETE FROM notifications
+        WHERE recipient_id IN
+        <foreach collection="accountIds" item="accountId" open="(" separator="," close=")">
+            #{accountId}
+        </foreach>
+        OR sender_id IN
+        <foreach collection="accountIds" item="accountId" open="(" separator="," close=")">
+            #{accountId}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.feedsystem.like.mapper.LikeMapper">
+
+    <resultMap id="VideoResultMap" type="com.example.feedsystem.video.model.VideoDO">
+        <id column="id" property="id"/>
+        <result column="author_id" property="authorId"/>
+        <result column="username" property="username"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="play_url" property="playUrl"/>
+        <result column="cover_url" property="coverUrl"/>
+        <result column="create_time" property="createTime"/>
+        <result column="likes_count" property="likesCount"/>
+        <result column="popularity" property="popularity"/>
+    </resultMap>
+
+    <sql id="VideoColumns">
+        v.id, v.author_id, v.username, v.title, v.description, v.play_url, v.cover_url,
+        v.create_time, v.likes_count, v.popularity
+    </sql>
+
+    <select id="existsVideoById" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM videos
+            WHERE id = #{videoId}
+        )
+    </select>
+
+    <select id="existsByVideoIdAndAccountId" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM likes
+            WHERE video_id = #{videoId}
+              AND account_id = #{accountId}
+        )
+    </select>
+
+    <insert id="insertLike">
+        INSERT INTO likes (video_id, account_id, created_at)
+        VALUES (#{videoId}, #{accountId}, #{createdAt})
+    </insert>
+
+    <delete id="deleteByVideoIdAndAccountId">
+        DELETE FROM likes
+        WHERE video_id = #{videoId}
+          AND account_id = #{accountId}
+    </delete>
+
+    <update id="changeVideoStats">
+        UPDATE videos
+        SET likes_count = GREATEST(likes_count + #{likesChange}, 0),
+            popularity = GREATEST(popularity + #{popularityChange}, 0)
+        WHERE id = #{videoId}
+    </update>
+
+    <select id="selectLikedVideosByAccountId" resultMap="VideoResultMap">
+        SELECT <include refid="VideoColumns"/>
+        FROM likes l
+        INNER JOIN videos v ON v.id = l.video_id
+        WHERE l.account_id = #{accountId}
+        ORDER BY l.created_at DESC
+        LIMIT #{limit}
+    </select>
+</mapper>
