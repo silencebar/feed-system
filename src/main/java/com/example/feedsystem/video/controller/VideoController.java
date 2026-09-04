@@ -8,6 +8,7 @@ import com.example.feedsystem.video.dto.ListByAuthorIdRequest;
 import com.example.feedsystem.video.dto.PublishVideoRequest;
 import com.example.feedsystem.video.dto.UploadResponse;
 import com.example.feedsystem.video.dto.VideoResponse;
+import com.example.feedsystem.video.dto.VideoUploadResponse;
 import com.example.feedsystem.video.service.VideoService;
 import com.example.feedsystem.video.service.VideoUploadService;
 import jakarta.validation.Valid;
@@ -30,7 +31,7 @@ public class VideoController {
     private final VideoService videoService;
 
     @PostMapping("/uploadVideo")
-    public UploadResponse uploadVideo(
+    public VideoUploadResponse uploadVideo(
             @RequestAttribute("account") AuthenticatedAccount account,
             @RequestParam("file") MultipartFile file
     ) {

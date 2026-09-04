@@ -12,7 +12,8 @@ public class PublishVideoRequest {
 
     private String description;
 
-    @NotBlank
+    private Long videoId;
+
     @JsonProperty("play_url")
     private String playUrl;
 

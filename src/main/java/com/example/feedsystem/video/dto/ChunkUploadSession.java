@@ -14,6 +14,12 @@ public class ChunkUploadSession {
     @JsonProperty("account_id")
     private Long accountId;
 
+    @JsonProperty("video_id")
+    private Long videoId;
+
+    @JsonProperty("object_key")
+    private String objectKey;
+
     private String filename;
 
     @JsonProperty("file_size")

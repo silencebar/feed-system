@@ -6,6 +6,7 @@
 
     <resultMap id="VideoResultMap" type="com.example.feedsystem.video.model.VideoDO">
         <id column="id" property="id"/>
+        <result column="asset_id" property="assetId"/>
         <result column="author_id" property="authorId"/>
         <result column="username" property="username"/>
         <result column="title" property="title"/>
@@ -23,16 +24,16 @@
     </resultMap>
 
     <sql id="VideoColumns">
-        id, author_id, username, title, description, play_url, cover_url, create_time, likes_count, popularity
+        id, asset_id, author_id, username, title, description, play_url, cover_url, create_time, likes_count, popularity
     </sql>
 
     <insert id="insertVideo" parameterType="com.example.feedsystem.video.model.VideoDO"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO videos (
-            author_id, username, title, description, play_url, cover_url, create_time, likes_count, popularity
+            asset_id, author_id, username, title, description, play_url, cover_url, create_time, likes_count, popularity
         )
         VALUES (
-            #{authorId}, #{username}, #{title}, #{description}, #{playUrl}, #{coverUrl}, #{createTime}, #{likesCount}, #{popularity}
+            #{assetId}, #{authorId}, #{username}, #{title}, #{description}, #{playUrl}, #{coverUrl}, #{createTime}, #{likesCount}, #{popularity}
         )
     </insert>
 

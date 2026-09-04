@@ -26,6 +26,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/like/**",
                         "/comment/**",
                         "/message/**",
+                        "/creator-assistant/**",
                         "/feed/listByFollowing"
                 )
                 .excludePathPatterns(

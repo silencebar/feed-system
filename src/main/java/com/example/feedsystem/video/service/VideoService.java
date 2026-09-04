@@ -10,6 +10,7 @@ import com.example.feedsystem.video.dto.VideoResponse;
 import com.example.feedsystem.video.mapper.VideoMapper;
 import com.example.feedsystem.video.model.OutboxMsgDO;
 import com.example.feedsystem.video.model.VideoDO;
+import com.example.feedsystem.video.model.VideoAssetDO;
 import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -26,6 +28,7 @@ public class VideoService {
     private static final int LIST_LIMIT = 200;
 
     private final VideoMapper videoMapper;
+    private final VideoAssetService videoAssetService;
     private final VideoCacheService videoCacheService;
     private final TagService tagService;
     private final TimelineService timelineService;
@@ -36,11 +39,19 @@ public class VideoService {
     @Transactional
     public VideoResponse publish(Long authorId, String username, PublishVideoRequest request) {
         VideoDO video = new VideoDO();
+        if (request.getVideoId() != null) {
+            VideoAssetDO asset = videoAssetService.requireCompleted(request.getVideoId(), authorId);
+            video.setAssetId(asset.getVideoId());
+            video.setPlayUrl(asset.getObjectKey());
+        } else if (StringUtils.hasText(request.getPlayUrl())) {
+            video.setPlayUrl(storageObjectKeyResolver.toObjectKey(request.getPlayUrl()));
+        } else {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "videoId is required");
+        }
         video.setAuthorId(authorId);
         video.setUsername(username);
         video.setTitle(request.getTitle());
         video.setDescription(request.getDescription());
-        video.setPlayUrl(storageObjectKeyResolver.toObjectKey(request.getPlayUrl()));
         video.setCoverUrl(storageObjectKeyResolver.toObjectKey(request.getCoverUrl()));
         video.setCreateTime(OffsetDateTime.now());
         video.setLikesCount(0L);

@@ -3,6 +3,8 @@ package com.example.feedsystem.video.service;
 import com.example.feedsystem.common.BusinessException;
 import com.example.feedsystem.storage.StorageService;
 import com.example.feedsystem.video.dto.UploadResponse;
+import com.example.feedsystem.video.dto.VideoUploadResponse;
+import com.example.feedsystem.video.model.VideoAssetDO;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -23,14 +25,29 @@ public class VideoUploadService {
 
     private final SecureRandom secureRandom = new SecureRandom();
     private final StorageService storageService;
+    private final VideoAssetService videoAssetService;
 
-    public VideoUploadService(StorageService storageService) {
+    public VideoUploadService(StorageService storageService, VideoAssetService videoAssetService) {
         this.storageService = storageService;
+        this.videoAssetService = videoAssetService;
     }
 
-    public UploadResponse uploadVideo(Long accountId, MultipartFile file) {
-        String objectKey = save(file, accountId, "videos", ".mp4", MAX_VIDEO_SIZE);
-        return UploadResponse.video(storageService.getUrl(objectKey));
+    public VideoUploadResponse uploadVideo(Long accountId, MultipartFile file) {
+        validateFile(file, MAX_VIDEO_SIZE);
+        if (!extension(file).equals(".mp4")) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "invalid file format");
+        }
+        String objectKey = objectKey(accountId, "videos", ".mp4");
+        String originalFileName = file.getOriginalFilename() == null ? "video.mp4" : file.getOriginalFilename();
+        VideoAssetDO asset = videoAssetService.create(accountId, null, objectKey, originalFileName,
+                file.getSize(), null);
+        try {
+            storageService.upload(file, objectKey);
+            return videoAssetService.markCompleted(asset.getVideoId(), accountId, storageService.getUrl(objectKey));
+        } catch (RuntimeException ex) {
+            videoAssetService.markFailedQuietly(asset.getVideoId(), accountId);
+            throw ex;
+        }
     }
 
     public UploadResponse uploadCover(Long accountId, MultipartFile file) {

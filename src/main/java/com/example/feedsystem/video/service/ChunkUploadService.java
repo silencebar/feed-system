@@ -7,7 +7,8 @@ import com.example.feedsystem.video.dto.ChunkStatusResponse;
 import com.example.feedsystem.video.dto.ChunkUploadSession;
 import com.example.feedsystem.video.dto.InitChunkUploadRequest;
 import com.example.feedsystem.video.dto.InitChunkUploadResponse;
-import com.example.feedsystem.video.dto.UploadResponse;
+import com.example.feedsystem.video.dto.VideoUploadResponse;
+import com.example.feedsystem.video.model.VideoAssetDO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -43,6 +44,7 @@ public class ChunkUploadService {
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final VideoUploadService videoUploadService;
+    private final VideoAssetService videoAssetService;
     private final StorageService storageService;
 
     @Value("${feedsystem.upload.root:.run/uploads}")
@@ -59,7 +61,8 @@ public class ChunkUploadService {
         String existingUploadId = redisGet(hashKey);
         if (existingUploadId != null) {
             ChunkUploadSession existing = requireSession(existingUploadId);
-            return new InitChunkUploadResponse(existingUploadId, uploadedChunks(existing));
+            ensureAsset(existing);
+            return new InitChunkUploadResponse(existingUploadId, existing.getVideoId(), uploadedChunks(existing));
         }
 
         ChunkUploadSession session = new ChunkUploadSession();
@@ -70,9 +73,13 @@ public class ChunkUploadService {
         session.setChunkSize(request.getChunkSize());
         session.setTotalChunks(request.getTotalChunks());
         session.setFileHash(request.getFileHash());
+        session.setObjectKey(videoUploadService.videoObjectKey(accountId));
+        VideoAssetDO asset = videoAssetService.create(accountId, session.getUploadId(), session.getObjectKey(),
+                session.getFilename(), session.getFileSize(), session.getFileHash());
+        session.setVideoId(asset.getVideoId());
         saveSession(session);
         redisSet(hashKey, session.getUploadId());
-        return new InitChunkUploadResponse(session.getUploadId(), List.of());
+        return new InitChunkUploadResponse(session.getUploadId(), session.getVideoId(), List.of());
     }
 
     public Integer uploadChunk(Long accountId, String uploadId, Integer chunkIndex, String chunkHash, MultipartFile file) {
@@ -116,8 +123,9 @@ public class ChunkUploadService {
         return new ChunkStatusResponse(uploadId, uploaded, session.getTotalChunks());
     }
 
-    public UploadResponse complete(Long accountId, String uploadId) {
+    public VideoUploadResponse complete(Long accountId, String uploadId) {
         ChunkUploadSession session = requireOwnedSession(accountId, uploadId);
+        ensureAsset(session);
         long uploadedCount = uploadedChunkCountWithLegacyMigration(session);
         log.info("Completing chunk upload: uploadId={}, chunkIndex={}, uploadedCount={}, totalChunks={}",
                 uploadId, "-", uploadedCount, session.getTotalChunks());
@@ -128,17 +136,41 @@ public class ChunkUploadService {
         }
         verifyChunkFiles(session);
 
-        String objectKey = videoUploadService.videoObjectKey(accountId);
         Path target = chunkDirectory(uploadId).resolve("merged.mp4");
+        videoAssetService.markUploading(session.getVideoId(), accountId);
         try {
             mergeChunks(session, target);
-            storageService.upload(new PathMultipartFile(target, "file", session.getFilename(), "video/mp4"), objectKey);
-            deleteDirectory(chunkDirectory(uploadId));
-            deleteUploadState(session);
+            storageService.upload(new PathMultipartFile(target, "file", session.getFilename(), "video/mp4"), session.getObjectKey());
         } catch (IOException ex) {
+            videoAssetService.markFailedQuietly(session.getVideoId(), accountId);
             throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "failed to merge chunks");
+        } catch (RuntimeException ex) {
+            videoAssetService.markFailedQuietly(session.getVideoId(), accountId);
+            throw ex;
         }
-        return UploadResponse.video(storageService.getUrl(objectKey));
+        String videoUrl = storageService.getUrl(session.getObjectKey());
+        VideoUploadResponse response = videoAssetService.markCompleted(session.getVideoId(), accountId, videoUrl);
+        cleanupCompletedUpload(session);
+        return response;
+    }
+
+    private void ensureAsset(ChunkUploadSession session) {
+        if (session.getVideoId() != null && session.getObjectKey() != null) return;
+        String objectKey = videoUploadService.videoObjectKey(session.getAccountId());
+        VideoAssetDO asset = videoAssetService.create(session.getAccountId(), session.getUploadId(), objectKey,
+                session.getFilename(), session.getFileSize(), session.getFileHash());
+        session.setVideoId(asset.getVideoId());
+        session.setObjectKey(objectKey);
+        saveSession(session);
+    }
+
+    private void cleanupCompletedUpload(ChunkUploadSession session) {
+        try {
+            deleteDirectory(chunkDirectory(session.getUploadId()));
+        } catch (IOException ex) {
+            log.warn("Failed to delete completed chunk directory: uploadId={}", session.getUploadId(), ex);
+        }
+        deleteUploadState(session);
     }
 
     private void mergeChunks(ChunkUploadSession session, Path target) throws IOException {

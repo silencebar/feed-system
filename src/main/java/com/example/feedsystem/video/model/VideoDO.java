@@ -7,6 +7,7 @@ import lombok.Data;
 public class VideoDO {
 
     private Long id;
+    private Long assetId;
     private Long authorId;
     private String username;
     private String title;

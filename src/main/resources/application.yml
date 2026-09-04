@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 18080
 
 spring:
   config:
@@ -32,11 +32,14 @@ feedsystem:
   upload:
     root: .run/uploads
 
+creator-agent:
+  base-url: ${CREATOR_AGENT_BASE_URL:http://127.0.0.1:8001}
+
 storage:
   type: minio
   minio:
-    endpoint: http://localhost:9000
+    endpoint: http://127.0.0.1:19000
     access-key: admin
     secret-key: password123
     bucket: feedsystem
-    public-url: http://localhost:9000
+    public-url: http://127.0.0.1:19000

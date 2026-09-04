@@ -152,8 +152,8 @@ async function runOne(token, modeName, concurrency) {
   const completeMs = performance.now() - completeStart;
   const totalMs = performance.now() - totalStart;
 
-  if (!complete.play_url && !complete.url) {
-    throw new Error(`/video/chunk/complete did not return play_url/url: ${JSON.stringify(complete)}`);
+  if (!complete.videoId || !complete.videoUrl || complete.uploadStatus !== "COMPLETED") {
+    throw new Error(`/video/chunk/complete did not return a completed video asset: ${JSON.stringify(complete)}`);
   }
 
   return {
@@ -166,7 +166,8 @@ async function runOne(token, modeName, concurrency) {
     uploadMs,
     completeMs,
     totalMs,
-    playUrl: complete.play_url ?? complete.url,
+    videoId: complete.videoId,
+    playUrl: complete.videoUrl,
   };
 }
 

@@ -7,7 +7,7 @@ import com.example.feedsystem.video.dto.CompleteChunkUploadRequest;
 import com.example.feedsystem.video.dto.InitChunkUploadRequest;
 import com.example.feedsystem.video.dto.InitChunkUploadResponse;
 import com.example.feedsystem.video.dto.UploadChunkResponse;
-import com.example.feedsystem.video.dto.UploadResponse;
+import com.example.feedsystem.video.dto.VideoUploadResponse;
 import com.example.feedsystem.video.service.ChunkUploadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +54,7 @@ public class ChunkUploadController {
     }
 
     @PostMapping("/complete")
-    public UploadResponse complete(
+    public VideoUploadResponse complete(
             @RequestAttribute("account") AuthenticatedAccount account,
             @Valid @RequestBody CompleteChunkUploadRequest request
     ) {

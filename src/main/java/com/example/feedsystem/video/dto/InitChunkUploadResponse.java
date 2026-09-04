@@ -12,6 +12,8 @@ public class InitChunkUploadResponse {
     @JsonProperty("upload_id")
     private String uploadId;
 
+    private Long videoId;
+
     @JsonProperty("uploaded_chunks")
     private List<Integer> uploadedChunks;
 }
