@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.feedsystem.video.mapper.VideoMediaMetadataMapper">
+    <resultMap id="MetadataResult" type="com.example.feedsystem.video.model.VideoMediaMetadataDO">
+        <id column="video_id" property="videoId"/>
+        <result column="duration_seconds" property="durationSeconds"/>
+        <result column="width" property="width"/>
+        <result column="height" property="height"/>
+        <result column="video_codec" property="videoCodec"/>
+        <result column="has_audio" property="hasAudio"/>
+        <result column="audio_codec" property="audioCodec"/>
+        <result column="probe_json" property="probeJson"/>
+        <result column="probed_at" property="probedAt"/>
+    </resultMap>
+    <insert id="upsert">
+        INSERT INTO video_media_metadata
+            (video_id, duration_seconds, width, height, video_codec, has_audio, audio_codec, probe_json, probed_at)
+        VALUES (#{videoId}, #{durationSeconds}, #{width}, #{height}, #{videoCodec},
+            #{hasAudio}, #{audioCodec,jdbcType=VARCHAR}, #{probeJson}, #{probedAt})
+        ON DUPLICATE KEY UPDATE duration_seconds = #{durationSeconds}, width = #{width}, height = #{height},
+            video_codec = #{videoCodec}, has_audio = #{hasAudio}, audio_codec = #{audioCodec,jdbcType=VARCHAR},
+            probe_json = #{probeJson}, probed_at = #{probedAt}
+    </insert>
+    <select id="selectByVideoId" resultMap="MetadataResult">
+        SELECT video_id, duration_seconds, width, height, video_codec, has_audio, audio_codec, probe_json, probed_at
+        FROM video_media_metadata WHERE video_id = #{videoId}
+    </select>
+</mapper>

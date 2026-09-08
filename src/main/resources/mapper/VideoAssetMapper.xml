@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.feedsystem.video.mapper.VideoAssetMapper">
+    <resultMap id="VideoAssetResultMap" type="com.example.feedsystem.video.model.VideoAssetDO">
+        <id column="video_id" property="videoId"/>
+        <result column="account_id" property="accountId"/>
+        <result column="upload_id" property="uploadId"/>
+        <result column="object_key" property="objectKey"/>
+        <result column="video_url" property="videoUrl"/>
+        <result column="original_filename" property="originalFileName"/>
+        <result column="file_size" property="fileSize"/>
+        <result column="file_hash" property="fileHash"/>
+        <result column="upload_status" property="uploadStatus"/>
+        <result column="media_status" property="mediaStatus"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="updated_time" property="updatedTime"/>
+    </resultMap>
+    <sql id="AssetColumns">video_id, account_id, upload_id, object_key, video_url, original_filename, file_size, file_hash, upload_status, media_status, created_time, updated_time</sql>
+    <insert id="insert" parameterType="com.example.feedsystem.video.model.VideoAssetDO" useGeneratedKeys="true" keyProperty="videoId" keyColumn="video_id">
+        INSERT INTO video_assets (account_id, upload_id, object_key, video_url, original_filename, file_size, file_hash, upload_status, media_status, created_time, updated_time)
+        VALUES (#{accountId}, #{uploadId}, #{objectKey}, #{videoUrl}, #{originalFileName}, #{fileSize}, #{fileHash}, #{uploadStatus}, #{mediaStatus}, #{createdTime}, #{updatedTime})
+    </insert>
+    <select id="selectById" resultMap="VideoAssetResultMap">
+        SELECT <include refid="AssetColumns"/> FROM video_assets WHERE video_id = #{videoId}
+    </select>
+    <update id="updateUploading">
+        UPDATE video_assets SET upload_status = 'UPLOADING', media_status = 'PENDING', updated_time = #{updatedTime}
+        WHERE video_id = #{videoId} AND account_id = #{accountId}
+    </update>
+    <update id="updateCompleted">
+        UPDATE video_assets SET video_url = #{videoUrl}, upload_status = 'COMPLETED', updated_time = #{updatedTime}
+        WHERE video_id = #{videoId} AND account_id = #{accountId}
+    </update>
+    <update id="updateFailed">
+        UPDATE video_assets SET upload_status = 'FAILED', updated_time = #{updatedTime}
+        WHERE video_id = #{videoId} AND account_id = #{accountId}
+    </update>
+    <update id="updateValidation">
+        UPDATE video_assets SET file_hash = #{fileHash}, media_status = #{mediaStatus}, updated_time = #{updatedTime}
+        WHERE video_id = #{videoId} AND account_id = #{accountId}
+    </update>
+</mapper>

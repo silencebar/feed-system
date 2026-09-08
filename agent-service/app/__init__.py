@@ -1,0 +1,2 @@
+"""FeedSystem creator assistant."""
+
