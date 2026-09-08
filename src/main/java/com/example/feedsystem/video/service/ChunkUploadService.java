@@ -46,11 +46,15 @@ public class ChunkUploadService {
     private final VideoUploadService videoUploadService;
     private final VideoAssetService videoAssetService;
     private final StorageService storageService;
+    private final VideoValidationService videoValidationService;
 
     @Value("${feedsystem.upload.root:.run/uploads}")
     private String uploadRoot;
 
     public InitChunkUploadResponse init(Long accountId, InitChunkUploadRequest request) {
+        if (request.getFileHash() == null || !request.getFileHash().matches("(?i)[0-9a-f]{32}")) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "file_hash must be a 32-character MD5");
+        }
         if (!request.getFilename().toLowerCase().endsWith(".mp4")) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "invalid file format");
         }
@@ -140,12 +144,17 @@ public class ChunkUploadService {
         videoAssetService.markUploading(session.getVideoId(), accountId);
         try {
             mergeChunks(session, target);
+            videoValidationService.validate(session.getVideoId(), accountId, target,
+                    session.getFileSize(), session.getFileHash());
             storageService.upload(new PathMultipartFile(target, "file", session.getFilename(), "video/mp4"), session.getObjectKey());
         } catch (IOException ex) {
             videoAssetService.markFailedQuietly(session.getVideoId(), accountId);
             throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "failed to merge chunks");
         } catch (RuntimeException ex) {
             videoAssetService.markFailedQuietly(session.getVideoId(), accountId);
+            if (ex instanceof VideoValidationService.IntegrityException) {
+                cleanupCompletedUpload(session);
+            }
             throw ex;
         }
         String videoUrl = storageService.getUrl(session.getObjectKey());

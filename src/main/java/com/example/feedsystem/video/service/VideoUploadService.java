@@ -2,6 +2,11 @@ package com.example.feedsystem.video.service;
 
 import com.example.feedsystem.common.BusinessException;
 import com.example.feedsystem.storage.StorageService;
+import com.example.feedsystem.storage.PathMultipartFile;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import lombok.extern.slf4j.Slf4j;
 import com.example.feedsystem.video.dto.UploadResponse;
 import com.example.feedsystem.video.dto.VideoUploadResponse;
 import com.example.feedsystem.video.model.VideoAssetDO;
@@ -16,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
+@Slf4j
 public class VideoUploadService {
 
     private static final long MAX_VIDEO_SIZE = 200L * 1024 * 1024;
@@ -26,10 +32,13 @@ public class VideoUploadService {
     private final SecureRandom secureRandom = new SecureRandom();
     private final StorageService storageService;
     private final VideoAssetService videoAssetService;
+    private final VideoValidationService videoValidationService;
 
-    public VideoUploadService(StorageService storageService, VideoAssetService videoAssetService) {
+    public VideoUploadService(StorageService storageService, VideoAssetService videoAssetService,
+                              VideoValidationService videoValidationService) {
         this.storageService = storageService;
         this.videoAssetService = videoAssetService;
+        this.videoValidationService = videoValidationService;
     }
 
     public VideoUploadResponse uploadVideo(Long accountId, MultipartFile file) {
@@ -41,12 +50,27 @@ public class VideoUploadService {
         String originalFileName = file.getOriginalFilename() == null ? "video.mp4" : file.getOriginalFilename();
         VideoAssetDO asset = videoAssetService.create(accountId, null, objectKey, originalFileName,
                 file.getSize(), null);
+        Path temp = null;
         try {
-            storageService.upload(file, objectKey);
+            temp = Files.createTempFile("video-validation-", ".mp4");
+            file.transferTo(temp);
+            videoValidationService.validate(asset.getVideoId(), accountId, temp, file.getSize(), null);
+            storageService.upload(new PathMultipartFile(temp, "file", originalFileName, "video/mp4"), objectKey);
             return videoAssetService.markCompleted(asset.getVideoId(), accountId, storageService.getUrl(objectKey));
+        } catch (IOException ex) {
+            videoAssetService.markFailedQuietly(asset.getVideoId(), accountId);
+            throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "failed to stage video for validation");
         } catch (RuntimeException ex) {
             videoAssetService.markFailedQuietly(asset.getVideoId(), accountId);
             throw ex;
+        } finally {
+            if (temp != null) {
+                try {
+                    Files.deleteIfExists(temp);
+                } catch (IOException ex) {
+                    log.warn("Failed to remove validation temp file: {}", temp, ex);
+                }
+            }
         }
     }
 

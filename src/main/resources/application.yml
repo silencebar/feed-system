@@ -29,6 +29,9 @@ redis:
   key-prefix: "v1:"
 
 feedsystem:
+  media:
+    ffprobe-path: ${FFPROBE_PATH:ffprobe}
+    probe-timeout-seconds: 20
   upload:
     root: .run/uploads
 
